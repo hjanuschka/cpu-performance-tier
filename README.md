@@ -5,7 +5,9 @@ performance tier classification algorithm used by Chromium's experimental Web
 CPU Performance API.
 
 The goal is to make the core algorithm easy for other browser engines, test
-suites, and tooling to consume without depending on Chromium internals.
+suites, and tooling to consume without depending on Chromium internals. The
+repository provides both a Rust crate and a small C++ implementation generated
+from the same rule/test data for engines that cannot consume Rust.
 
 ## API
 
@@ -131,10 +133,27 @@ The crate intentionally does not probe the host system. That keeps OS access,
 privacy review, threading, caching, and feature gating under the embedding
 engine's control.
 
+## Shared Rust/C++ implementation
+
+The tier pattern rules and Chromium-derived test vectors live in
+`algorithm/cpu_performance.json`. `tools/generate.py` produces:
+
+- `src/generated.rs` for the Rust crate.
+- `cpp/generated_rules.inc` for the C++ implementation.
+- `cpp/generated_tests.cc` for the C++ test binary.
+
+Generated files are checked in so embedders can vendor either implementation
+without running the generator. CI runs `python3 tools/generate.py --check`, Rust
+tests, and C++ CTest coverage to prevent drift.
+
+C++ consumers can vendor `cpp/cpu_performance_tier.h`,
+`cpp/cpu_performance_tier.cc`, and `cpp/generated_rules.inc`.
+
 ## Provenance
 
-This is a Rust port of Chromium's `content/browser/cpu_performance` algorithm.
-The original implementation is BSD-licensed by The Chromium Authors.
+This is a Rust and C++ port of Chromium's
+`content/browser/cpu_performance` algorithm. The original implementation is
+BSD-licensed by The Chromium Authors.
 
 ## Tests
 
