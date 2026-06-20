@@ -25,6 +25,35 @@ The crate exposes:
 - `split_cpu_model(cpu_model)` for normalizing CPU model strings.
 - `Manufacturer` and `PerformanceTier` enums.
 
+## Optional host information helpers
+
+By default the crate only provides the pure classifier. If an embedder wants a
+convenience API for local host probing, enable the optional `host-info` feature:
+
+```toml
+[dependencies]
+cpu-performance-tier = { version = "0.1", features = ["host-info"] }
+```
+
+Then call:
+
+```rust
+use cpu_performance_tier::{host_cpu_info, tier_from_host};
+
+let info = host_cpu_info();
+let tier = tier_from_host();
+```
+
+The `host-info` feature adds no crate dependencies. It uses:
+
+- Rust `std::thread::available_parallelism()` for logical processor count.
+- `/proc/cpuinfo` on Linux and Android for the CPU model string.
+- `sysctl -n machdep.cpu.brand_string` on macOS-like platforms.
+- `PROCESSOR_IDENTIFIER` on Windows.
+
+Engines can still bypass these helpers and pass their own platform abstraction
+values to `tier_from_cpu_info`.
+
 ## Tier values
 
 - `Unknown`

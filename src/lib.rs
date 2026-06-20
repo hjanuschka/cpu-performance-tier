@@ -5,7 +5,9 @@
 //! CPU performance tier classification.
 //!
 //! This crate is a Rust port of Chromium's experimental CPU Performance API
-//! classifier. It intentionally contains only the pure classification logic.
+//! classifier. By default it contains only the pure classification logic.
+//! Enable the `host-info` feature for dependency-free helpers that read host
+//! CPU information through platform facilities.
 
 use regex::Regex;
 
@@ -46,6 +48,13 @@ pub enum Manufacturer {
     Microsoft,
     Qualcomm,
     Samsung,
+}
+
+#[cfg(feature = "host-info")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct HostCpuInfo {
+    pub cpu_model: Option<String>,
+    pub logical_cores: Option<usize>,
 }
 
 fn re(pattern: &str) -> Regex {
@@ -323,6 +332,128 @@ pub fn tier_from_cpu_info(cpu_model: &str, cores: i32) -> PerformanceTier {
     PerformanceTier::Ultra
 }
 
+#[cfg(feature = "host-info")]
+fn usize_to_i32(value: usize) -> i32 {
+    i32::try_from(value).unwrap_or(i32::MAX)
+}
+
+/// Returns the host logical processor count.
+///
+/// This helper is available with the `host-info` feature. It uses only the
+/// Rust standard library.
+#[cfg(feature = "host-info")]
+pub fn host_logical_cores() -> Option<usize> {
+    std::thread::available_parallelism().ok().map(usize::from)
+}
+
+/// Returns the host CPU model or brand string when available.
+///
+/// This helper is available with the `host-info` feature and does not add any
+/// crate dependencies. It uses `/proc/cpuinfo` on Linux and Android, `sysctl`
+/// on macOS-like platforms, and environment variables on Windows.
+#[cfg(feature = "host-info")]
+pub fn host_cpu_model() -> Option<String> {
+    host_cpu_model_impl()
+}
+
+/// Returns both host inputs needed by the classifier.
+#[cfg(feature = "host-info")]
+pub fn host_cpu_info() -> HostCpuInfo {
+    HostCpuInfo {
+        cpu_model: host_cpu_model(),
+        logical_cores: host_logical_cores(),
+    }
+}
+
+/// Returns the host performance tier using the CPU model when available and
+/// falling back to logical core count otherwise.
+#[cfg(feature = "host-info")]
+pub fn tier_from_host() -> PerformanceTier {
+    let info = host_cpu_info();
+    match (info.cpu_model.as_deref(), info.logical_cores) {
+        (Some(cpu_model), Some(logical_cores)) => {
+            tier_from_cpu_info(cpu_model, usize_to_i32(logical_cores))
+        }
+        (_, Some(logical_cores)) => tier_from_cores(usize_to_i32(logical_cores)),
+        _ => PerformanceTier::Unknown,
+    }
+}
+
+#[cfg(all(feature = "host-info", any(target_os = "linux", target_os = "android")))]
+fn host_cpu_model_impl() -> Option<String> {
+    cpu_model_from_proc_cpuinfo(&std::fs::read_to_string("/proc/cpuinfo").ok()?)
+}
+
+#[cfg(all(
+    feature = "host-info",
+    any(
+        target_os = "macos",
+        target_os = "ios",
+        target_os = "freebsd",
+        target_os = "openbsd",
+        target_os = "netbsd"
+    )
+))]
+fn host_cpu_model_impl() -> Option<String> {
+    let output = std::process::Command::new("sysctl")
+        .args(["-n", "machdep.cpu.brand_string"])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    non_empty_line(String::from_utf8_lossy(&output.stdout).trim())
+}
+
+#[cfg(all(feature = "host-info", target_os = "windows"))]
+fn host_cpu_model_impl() -> Option<String> {
+    non_empty_line(&std::env::var("PROCESSOR_IDENTIFIER").ok()?)
+}
+
+#[cfg(all(
+    feature = "host-info",
+    not(any(
+        target_os = "linux",
+        target_os = "android",
+        target_os = "macos",
+        target_os = "ios",
+        target_os = "freebsd",
+        target_os = "openbsd",
+        target_os = "netbsd",
+        target_os = "windows"
+    ))
+))]
+fn host_cpu_model_impl() -> Option<String> {
+    None
+}
+
+#[cfg(feature = "host-info")]
+fn non_empty_line(value: &str) -> Option<String> {
+    let value = value.trim();
+    if value.is_empty() {
+        None
+    } else {
+        Some(value.to_string())
+    }
+}
+
+#[cfg(feature = "host-info")]
+fn cpu_model_from_proc_cpuinfo(contents: &str) -> Option<String> {
+    for key in ["model name", "Processor", "Hardware"] {
+        for line in contents.lines() {
+            let Some((name, value)) = line.split_once(':') else {
+                continue;
+            };
+            if name.trim().eq_ignore_ascii_case(key) {
+                if let Some(value) = non_empty_line(value) {
+                    return Some(value);
+                }
+            }
+        }
+    }
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -583,5 +714,24 @@ mod tests {
         assert_eq!(PerformanceTier::try_from(4), Ok(PerformanceTier::Ultra));
         assert_eq!(PerformanceTier::try_from(-1), Err(TierFromIntError(-1)));
         assert_eq!(PerformanceTier::try_from(5), Err(TierFromIntError(5)));
+    }
+
+    #[cfg(feature = "host-info")]
+    #[test]
+    fn parses_proc_cpuinfo_model() {
+        let contents = "processor: 0\nmodel name: Intel(R) Core(TM) Ultra 7 155H\n";
+        assert_eq!(
+            cpu_model_from_proc_cpuinfo(contents),
+            Some("Intel(R) Core(TM) Ultra 7 155H".to_string())
+        );
+    }
+
+    #[cfg(feature = "host-info")]
+    #[test]
+    fn host_helpers_are_callable() {
+        let _ = host_logical_cores();
+        let _ = host_cpu_model();
+        let _ = host_cpu_info();
+        let _ = tier_from_host();
     }
 }

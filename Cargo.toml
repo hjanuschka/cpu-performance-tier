@@ -16,3 +16,4 @@ regex = "1"
 
 [features]
 default = []
+host-info = []
