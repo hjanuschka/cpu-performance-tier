@@ -16,6 +16,10 @@ let tier = tier_from_cpu_info("Intel(R) Core(TM) Ultra 7 155H", 8);
 assert_eq!(tier, PerformanceTier::Ultra);
 ```
 
+Browser engines provide the OS CPU model string and logical processor count.
+See [docs/engine-integration.md](docs/engine-integration.md) for integration
+notes, fallback behavior, and release publishing.
+
 The crate exposes:
 
 - `tier_from_cores(cores)` for the simple core-count fallback.
@@ -35,6 +39,14 @@ The crate exposes:
 
 This is a Rust port of Chromium's `content/browser/cpu_performance` algorithm.
 The original implementation is BSD-licensed by The Chromium Authors.
+
+## Tests
+
+The unit tests include the Chromium `cpu_performance_unittest.cc` cases for the
+pure classifier: core-count fallback, CPU model normalization, CPU-info tiering,
+and integer tier conversion. Chromium's browser initialization test is not
+ported because this crate intentionally does not perform OS probing or global
+browser-process initialization.
 
 ## Status
 

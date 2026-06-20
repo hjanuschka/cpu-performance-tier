@@ -149,12 +149,16 @@ pub fn split_cpu_model(cpu_model: &str) -> (Manufacturer, String) {
         Manufacturer::Intel => {
             replace_first(&mut text, r"(?i).*?\bIntel\b", "");
             trim_and_collapse_whitespace(&mut text);
-            replace(&mut text, r"(?i)\b(Core)(2)\b", "$1 $2");
-            replace(&mut text, r"(?i)\b(Core i\d+)( )?-( )?", "$1-");
-            replace(&mut text, r"(?i)\b(Core i\d+) (M) (\d+)\b", "$1-$3$2");
-            replace(&mut text, r"(?i)\b(Core i\d+) ([LQU]) (\d+)\b", "$1-$3$2M");
-            replace(&mut text, r"(?i)\b(Core i\d+) (\d+)\b", "$1-$2");
-            replace(&mut text, r"(?i)\b(Celeron|Pentium) Dual(-Core)?\b", "$1");
+            replace(&mut text, r"(?i)\b(Core)(2)\b", "${1} ${2}");
+            replace(&mut text, r"(?i)\b(Core i\d+)( )?-( )?", "${1}-");
+            replace(&mut text, r"(?i)\b(Core i\d+) (M) (\d+)\b", "${1}-${3}${2}");
+            replace(
+                &mut text,
+                r"(?i)\b(Core i\d+) ([LQU]) (\d+)\b",
+                "${1}-${3}${2}M",
+            );
+            replace(&mut text, r"(?i)\b(Core i\d+) (\d+)\b", "${1}-${2}");
+            replace(&mut text, r"(?i)\b(Celeron|Pentium) Dual(-Core)?\b", "${1}");
             replace(&mut text, r"\b0+$", "");
         }
         _ => return (manufacturer, String::new()),
@@ -324,49 +328,260 @@ mod tests {
     use super::*;
 
     #[test]
-    fn core_fallback() {
-        assert_eq!(tier_from_cores(0), PerformanceTier::Unknown);
-        assert_eq!(tier_from_cores(1), PerformanceTier::Low);
-        assert_eq!(tier_from_cores(4), PerformanceTier::Mid);
-        assert_eq!(tier_from_cores(12), PerformanceTier::High);
-        assert_eq!(tier_from_cores(13), PerformanceTier::Ultra);
+    fn get_tier_from_cores() {
+        let tests = [
+            (1, PerformanceTier::Low),
+            (2, PerformanceTier::Low),
+            (3, PerformanceTier::Mid),
+            (4, PerformanceTier::Mid),
+            (5, PerformanceTier::High),
+            (8, PerformanceTier::High),
+            (12, PerformanceTier::High),
+            (13, PerformanceTier::Ultra),
+            (16, PerformanceTier::Ultra),
+            (96, PerformanceTier::Ultra),
+            (0, PerformanceTier::Unknown),
+            (-42, PerformanceTier::Unknown),
+        ];
+
+        for (cores, expected_tier) in tests {
+            assert_eq!(
+                expected_tier,
+                tier_from_cores(cores),
+                "failed for {cores} core(s)"
+            );
+        }
     }
 
     #[test]
-    fn normalizes_intel_model_names() {
-        assert_eq!(
-            split_cpu_model("Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz"),
-            (Manufacturer::Intel, "Core i7-1065G7".to_string())
-        );
-        assert_eq!(
-            split_cpu_model("Intel Core i5 8250 Processor"),
-            (Manufacturer::Intel, "Core i5-8250".to_string())
-        );
+    fn split_cpu_model_matches_chromium() {
+        let tests = [
+            (
+                "Intel(R) Core(TM) i7-10700K CPU @ 3.80GHz",
+                Manufacturer::Intel,
+                "Core i7-10700K",
+            ),
+            (
+                "Intel® Core™i7-8600HQ CPU @ 3.0GHz",
+                Manufacturer::Intel,
+                "Core i7-8600HQ",
+            ),
+            (
+                "Intel(R) Processor 5Y70 CPU @ 1.10GHz",
+                Manufacturer::Intel,
+                "5Y70",
+            ),
+            (
+                "Intel(R) Core(TM) i3 CPU       M 330  @ 2.13GHz",
+                Manufacturer::Intel,
+                "Core i3-330M",
+            ),
+            (
+                "Intel(R) Core(TM)2 Duo CPU     E4300  @ 1.80GHz",
+                Manufacturer::Intel,
+                "Core 2 Duo E4300",
+            ),
+            (
+                "Intel(R) Core(TM) i7 CPU       L 620  @ 2.00GHz",
+                Manufacturer::Intel,
+                "Core i7-620LM",
+            ),
+            (
+                "Intel(R) Core i5 - 10500u (tm) Processor",
+                Manufacturer::Intel,
+                "Core i5-10500u",
+            ),
+            (
+                "Celeron(R) Dual-Core CPU       T3000  @ 1.80GHz",
+                Manufacturer::Intel,
+                "Celeron T3000",
+            ),
+            (
+                "AMD Ryzen 7 5800X 8-Core Processor",
+                Manufacturer::Amd,
+                "Ryzen 7 5800X",
+            ),
+            (
+                "AMD Ryzen 5 3500U with Radeon Vega Mobile Gfx",
+                Manufacturer::Amd,
+                "Ryzen 5 3500U",
+            ),
+            (
+                "AMD A4-9120e RADEON R3, 4 COMPUTE CORES 2C+2G",
+                Manufacturer::Amd,
+                "A4-9120e",
+            ),
+            (
+                "AMD A10-4600M APU with Radeon(tm) HD Graphics",
+                Manufacturer::Amd,
+                "A10-4600M",
+            ),
+            (
+                "AMD FX(tm)-4130 Quad-Core Processor",
+                Manufacturer::Amd,
+                "FX-4130",
+            ),
+            (
+                "AMD Ryzen 3 3250C 15W with Radeon Graphics",
+                Manufacturer::Amd,
+                "Ryzen 3 3250C",
+            ),
+            (
+                "AMD Ryzen 5 6600HS Creator Edition",
+                Manufacturer::Amd,
+                "Ryzen 5 6600HS",
+            ),
+            (
+                "AMD Turion(tm) 64 Mobile Technology MK-36",
+                Manufacturer::Amd,
+                "Turion 64 MK-36",
+            ),
+            (
+                "AMD® Ryzen™5  3450U Quad Core@",
+                Manufacturer::Amd,
+                "Ryzen 5 3450U",
+            ),
+            ("Apple M1 ", Manufacturer::Apple, "M1"),
+            ("Apple M2 Pro (Virtual)", Manufacturer::Apple, "M2 Pro"),
+            ("Microsoft SQ2 @ 3.15 GHz", Manufacturer::Microsoft, ""),
+            (
+                "Snapdragon(R) X Elite - X1E78100 - Qualcomm(R) Oryon(TM) CPU",
+                Manufacturer::Qualcomm,
+                "",
+            ),
+            ("Snapdragon (TM) 7c @ 2.40 GHz", Manufacturer::Qualcomm, ""),
+            ("MediaTek Dimensity 9200", Manufacturer::MediaTek, ""),
+            ("Samsung Exynos 2100", Manufacturer::Samsung, ""),
+            ("Unknown CPU", Manufacturer::Unknown, ""),
+        ];
+
+        for (cpu_model, expected_manufacturer, expected_model) in tests {
+            let (manufacturer, model) = split_cpu_model(cpu_model);
+            assert_eq!(
+                expected_manufacturer, manufacturer,
+                "failed for '{cpu_model}'"
+            );
+            assert_eq!(expected_model, model, "failed for '{cpu_model}'");
+        }
     }
 
     #[test]
-    fn classifies_known_low_end_intel_atoms() {
-        assert_eq!(
-            tier_from_cpu_info("Intel Atom Z3735F", 4),
-            PerformanceTier::Low
-        );
+    fn get_tier_from_cpu_info_matches_chromium() {
+        let tests = [
+            (-42, "Some imaginary processor", PerformanceTier::Unknown),
+            (0, "Some unknown processor", PerformanceTier::Unknown),
+            (
+                1,
+                "Intel(R) Celeron(R) CPU          450  @ 2.20GHz",
+                PerformanceTier::Low,
+            ),
+            (1, "AMD Athlon(tm) Processor 1640B", PerformanceTier::Low),
+            (
+                2,
+                "AMD E2-9000e RADEON R2, 4 COMPUTE CORES 2C+2G",
+                PerformanceTier::Low,
+            ),
+            (
+                2,
+                "AMD A4-9120C RADEON R4, 5 COMPUTE CORES 2C+3G",
+                PerformanceTier::Low,
+            ),
+            (
+                2,
+                "AMD Athlon(tm) 64 X2 Dual Core Processor 5000+",
+                PerformanceTier::Low,
+            ),
+            (
+                4,
+                "AMD Ryzen 3 3200U with Radeon Vega Mobile Gfx",
+                PerformanceTier::Mid,
+            ),
+            (
+                4,
+                "AMD Ryzen 3 3100 4-Core Processor",
+                PerformanceTier::High,
+            ),
+            (
+                2,
+                "Intel(R) Atom(TM) CPU Z520   @ 1.33GHz",
+                PerformanceTier::Low,
+            ),
+            (
+                2,
+                "Intel(R) Celeron(R) CPU J3355 @ 2.00GHz",
+                PerformanceTier::Low,
+            ),
+            (
+                2,
+                "Intel(R) Core(TM)2 Duo CPU     P8600  @ 2.40GHz",
+                PerformanceTier::Low,
+            ),
+            (
+                2,
+                "Intel(R) Pentium(R) CPU        P6100  @ 2.00GHz",
+                PerformanceTier::Low,
+            ),
+            (
+                2,
+                "Intel(R) Celeron(R) CPU B830 @ 1.80GHz",
+                PerformanceTier::Low,
+            ),
+            (
+                2,
+                "Intel(R) Celeron(R) N4000 CPU @ 1.10GHz",
+                PerformanceTier::Mid,
+            ),
+            (
+                4,
+                "Intel(R) Celeron(R) CPU  N3160  @ 1.60GHz",
+                PerformanceTier::Low,
+            ),
+            (4, "Intel(R) N100", PerformanceTier::High),
+            (4, "Intel(R) Atom(TM) x7425E", PerformanceTier::High),
+            (
+                8,
+                "11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz",
+                PerformanceTier::High,
+            ),
+            (8, "Intel(R) Core(TM) Ultra 5 226V", PerformanceTier::Ultra),
+            (16, "Intel(R) Core(TM) Ultra 7 155H", PerformanceTier::Ultra),
+            (6, "Apple A18 Pro", PerformanceTier::High),
+            (8, "Apple M1", PerformanceTier::Ultra),
+            (
+                10,
+                "Snapdragon(R) X Plus - X1P64100 - Qualcomm(R) Oryon(TM) CPU",
+                PerformanceTier::High,
+            ),
+            (
+                12,
+                "Snapdragon(R) X Elite - X1E78100 - Qualcomm(R) Oryon(TM) CPU",
+                PerformanceTier::Ultra,
+            ),
+            (8, "MediaTek Dimensity 9200", PerformanceTier::High),
+            (8, "Samsung Exynos 2100", PerformanceTier::High),
+            (2, "Unknown CPU", PerformanceTier::Low),
+            (4, "Unknown CPU", PerformanceTier::Mid),
+            (8, "Unknown CPU", PerformanceTier::High),
+            (16, "Unknown CPU", PerformanceTier::Ultra),
+        ];
+
+        for (cores, model, expected_tier) in tests {
+            assert_eq!(
+                expected_tier,
+                tier_from_cpu_info(model, cores),
+                "failed for '{model}' with {cores} core(s)"
+            );
+        }
     }
 
     #[test]
-    fn classifies_newer_four_core_cpus() {
-        assert_eq!(
-            tier_from_cpu_info("AMD Ryzen 3 5300U with Radeon Graphics", 4),
-            PerformanceTier::High
-        );
-        assert_eq!(tier_from_cpu_info("Intel N100", 4), PerformanceTier::High);
-    }
-
-    #[test]
-    fn classifies_ultra_special_cases() {
-        assert_eq!(tier_from_cpu_info("Apple M1", 8), PerformanceTier::Ultra);
-        assert_eq!(
-            tier_from_cpu_info("Intel(R) Core(TM) Ultra 7 155H", 8),
-            PerformanceTier::Ultra
-        );
+    fn tier_from_int() {
+        assert_eq!(PerformanceTier::try_from(0), Ok(PerformanceTier::Unknown));
+        assert_eq!(PerformanceTier::try_from(1), Ok(PerformanceTier::Low));
+        assert_eq!(PerformanceTier::try_from(2), Ok(PerformanceTier::Mid));
+        assert_eq!(PerformanceTier::try_from(3), Ok(PerformanceTier::High));
+        assert_eq!(PerformanceTier::try_from(4), Ok(PerformanceTier::Ultra));
+        assert_eq!(PerformanceTier::try_from(-1), Err(TierFromIntError(-1)));
+        assert_eq!(PerformanceTier::try_from(5), Err(TierFromIntError(5)));
     }
 }
