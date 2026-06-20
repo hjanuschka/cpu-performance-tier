@@ -1,0 +1,48 @@
+{
+  "rules": [
+    {"manufacturer":"Amd","min_cores":2,"max_cores":2,"tier":"Low","include":["^Athlon 64\\b","^Athlon II\\b","^Athlon X2\\b","^Phenom II\\b","^Sempron X2\\b","^Turion II\\b","^Turion X2\\b","^(A4|E2)-[3]\\d\\d\\d[A-Z]*\\b","^(A4|A6)-[4]\\d\\d\\dM[A-Z]*\\b"]},
+    {"manufacturer":"Amd","min_cores":2,"max_cores":2,"tier":"Low","include":["^(C|E|E1|E2|T|Z)-\\w*\\b","^(A4)-[1]\\d\\d\\d[A-Z]*\\b","^(GX)-[2]\\d\\d[A-Z]*\\b","^Sempron 2650\\b"]},
+    {"manufacturer":"Amd","min_cores":2,"max_cores":2,"tier":"Low","include":["^A4-9120[Ce]\\b"]},
+    {"manufacturer":"Amd","min_cores":4,"max_cores":4,"tier":"High","include":["^Ryzen\\b"],"exclude":["^Ryzen 3 Pro 2100GE\\b","^Ryzen 3 Pro 3050GE\\b","^Ryzen 3 2200U\\b","^Ryzen 3 3200U\\b","^Ryzen 3 3250[UC]\\b","^Ryzen Embedded R[1]\\d\\d\\d[A-Z]*\\b","^Ryzen Embedded R2312\\b"]},
+    {"manufacturer":"Intel","min_cores":2,"max_cores":4,"tier":"Low","include":["^Atom (Z5)\\d\\d[A-Z]*\\b","^Atom (2|3|N2)\\d\\d[A-Z]*\\b","^Atom (D4|N4|D5|N5)\\d\\d[A-Z]*\\b","^Atom (E6)\\d\\d[A-Z]*\\b","^Atom (Z6)\\d\\d[A-Z]*\\b","^Atom (D2|N2)\\d\\d\\d[A-Z]*\\b","^Atom (Z2)\\d\\d\\d[A-Z]*\\b"]},
+    {"manufacturer":"Intel","min_cores":2,"max_cores":4,"tier":"Low","include":["^Celeron (J1)\\d\\d\\d[A-Z]*\\b","^Pentium (J2)\\d\\d\\d[A-Z]*\\b","^Atom (C2)[35]\\d\\d[A-Z]*\\b","^Atom (E3)[8]\\d\\d[A-Z]*\\b","^Celeron (N2)\\d\\d\\d[A-Z]*\\b","^Pentium (N3)[5]\\d\\d[A-Z]*\\b","^Atom (Z3)\\d\\d\\d[A-Z]*\\b","^Atom x[5]-(E8)\\d\\d\\d[A-Z]*\\b","^Celeron (J3|N3)[01]\\d\\d[A-Z]*\\b","^Pentium (J3|N3)[7]\\d\\d[A-Z]*\\b","^Atom x[57]-(Z8)\\d\\d\\d[A-Z]*\\b"]},
+    {"manufacturer":"Intel","min_cores":2,"max_cores":2,"tier":"Low","include":["^Atom x[5]-(A3|E3)\\d\\d\\d[A-Z]*\\b","^Celeron (J3|N3)[34]\\d\\d[A-Z]*\\b","^Atom (C3)\\d\\d\\d[A-Z]*\\b"]},
+    {"manufacturer":"Intel","min_cores":2,"max_cores":2,"tier":"Low","include":["^Celeron (E1|SU2|T1|T3)\\d\\d\\d[A-Z]*\\b","^Core 2 Duo\\b","^Core 2 Extreme\\b","^Pentium (E2|SU2|SU4|T2|T3|T4)\\d\\d\\d[A-Z]*\\b","^Xeon (3|E3|L3)\\d\\d\\d[A-Z]*\\b"]},
+    {"manufacturer":"Intel","min_cores":2,"max_cores":2,"tier":"Low","include":["^Celeron (P4|U3)\\d\\d\\d[A-Z]*\\b","^Pentium (P6|U5)\\d\\d\\d[A-Z]*\\b"]},
+    {"manufacturer":"Intel","min_cores":2,"max_cores":2,"tier":"Low","include":["^Celeron (7|8|B7|B8)\\d\\d[A-Z]*\\b","^Pentium (9|B9)\\d\\d[A-Z]*\\b","^Celeron (1)\\d\\d\\d[A-Z]*\\b","^Pentium (2|A1)\\d\\d\\d[A-Z]*\\b"]},
+    {"manufacturer":"Intel","min_cores":4,"max_cores":4,"tier":"High","include":["^N\\d\\d+\\b","^Atom x7425E\\b"]},
+    {"manufacturer":"Apple","min_cores":8,"max_cores":10,"tier":"Ultra","include":["^M\\d+\\b"]},
+    {"manufacturer":"Intel","min_cores":8,"max_cores":10,"tier":"Ultra","include":["^Core Ultra\\b"]}
+  ],
+  "core_tests": [[1,"Low"],[2,"Low"],[3,"Mid"],[4,"Mid"],[5,"High"],[8,"High"],[12,"High"],[13,"Ultra"],[16,"Ultra"],[96,"Ultra"],[0,"Unknown"],[-42,"Unknown"]],
+  "split_tests": [
+    ["Intel(R) Core(TM) i7-10700K CPU @ 3.80GHz","Intel","Core i7-10700K"],
+    ["Intel® Core™i7-8600HQ CPU @ 3.0GHz","Intel","Core i7-8600HQ"],
+    ["Intel(R) Processor 5Y70 CPU @ 1.10GHz","Intel","5Y70"],
+    ["Intel(R) Core(TM) i3 CPU       M 330  @ 2.13GHz","Intel","Core i3-330M"],
+    ["Intel(R) Core(TM)2 Duo CPU     E4300  @ 1.80GHz","Intel","Core 2 Duo E4300"],
+    ["Intel(R) Core(TM) i7 CPU       L 620  @ 2.00GHz","Intel","Core i7-620LM"],
+    ["Intel(R) Core i5 - 10500u (tm) Processor","Intel","Core i5-10500u"],
+    ["Celeron(R) Dual-Core CPU       T3000  @ 1.80GHz","Intel","Celeron T3000"],
+    ["AMD Ryzen 7 5800X 8-Core Processor","Amd","Ryzen 7 5800X"],
+    ["AMD Ryzen 5 3500U with Radeon Vega Mobile Gfx","Amd","Ryzen 5 3500U"],
+    ["AMD A4-9120e RADEON R3, 4 COMPUTE CORES 2C+2G","Amd","A4-9120e"],
+    ["AMD A10-4600M APU with Radeon(tm) HD Graphics","Amd","A10-4600M"],
+    ["AMD FX(tm)-4130 Quad-Core Processor","Amd","FX-4130"],
+    ["AMD Ryzen 3 3250C 15W with Radeon Graphics","Amd","Ryzen 3 3250C"],
+    ["AMD Ryzen 5 6600HS Creator Edition","Amd","Ryzen 5 6600HS"],
+    ["AMD Turion(tm) 64 Mobile Technology MK-36","Amd","Turion 64 MK-36"],
+    ["AMD® Ryzen™5  3450U Quad Core@","Amd","Ryzen 5 3450U"],
+    ["Apple M1 ","Apple","M1"],
+    ["Apple M2 Pro (Virtual)","Apple","M2 Pro"],
+    ["Microsoft SQ2 @ 3.15 GHz","Microsoft",""],
+    ["Snapdragon(R) X Elite - X1E78100 - Qualcomm(R) Oryon(TM) CPU","Qualcomm",""],
+    ["Snapdragon (TM) 7c @ 2.40 GHz","Qualcomm",""],
+    ["MediaTek Dimensity 9200","MediaTek",""],
+    ["Samsung Exynos 2100","Samsung",""],
+    ["Unknown CPU","Unknown",""]
+  ],
+  "tier_cpu_info_tests": [
+    [-42,"Some imaginary processor","Unknown"],[0,"Some unknown processor","Unknown"],[1,"Intel(R) Celeron(R) CPU          450  @ 2.20GHz","Low"],[1,"AMD Athlon(tm) Processor 1640B","Low"],[2,"AMD E2-9000e RADEON R2, 4 COMPUTE CORES 2C+2G","Low"],[2,"AMD A4-9120C RADEON R4, 5 COMPUTE CORES 2C+3G","Low"],[2,"AMD Athlon(tm) 64 X2 Dual Core Processor 5000+","Low"],[4,"AMD Ryzen 3 3200U with Radeon Vega Mobile Gfx","Mid"],[4,"AMD Ryzen 3 3100 4-Core Processor","High"],[2,"Intel(R) Atom(TM) CPU Z520   @ 1.33GHz","Low"],[2,"Intel(R) Celeron(R) CPU J3355 @ 2.00GHz","Low"],[2,"Intel(R) Core(TM)2 Duo CPU     P8600  @ 2.40GHz","Low"],[2,"Intel(R) Pentium(R) CPU        P6100  @ 2.00GHz","Low"],[2,"Intel(R) Celeron(R) CPU B830 @ 1.80GHz","Low"],[2,"Intel(R) Celeron(R) N4000 CPU @ 1.10GHz","Mid"],[4,"Intel(R) Celeron(R) CPU  N3160  @ 1.60GHz","Low"],[4,"Intel(R) N100","High"],[4,"Intel(R) Atom(TM) x7425E","High"],[8,"11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz","High"],[8,"Intel(R) Core(TM) Ultra 5 226V","Ultra"],[16,"Intel(R) Core(TM) Ultra 7 155H","Ultra"],[6,"Apple A18 Pro","High"],[8,"Apple M1","Ultra"],[10,"Snapdragon(R) X Plus - X1P64100 - Qualcomm(R) Oryon(TM) CPU","High"],[12,"Snapdragon(R) X Elite - X1E78100 - Qualcomm(R) Oryon(TM) CPU","Ultra"],[8,"MediaTek Dimensity 9200","High"],[8,"Samsung Exynos 2100","High"],[2,"Unknown CPU","Low"],[4,"Unknown CPU","Mid"],[8,"Unknown CPU","High"],[16,"Unknown CPU","Ultra"]
+  ]
+}
